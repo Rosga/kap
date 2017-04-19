@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "outDir": "./build/",
+    "sourceMap": false,
+    "noImplicitAny": false,
+    "target": "esnext",
+    "jsx": "react",
+    "noResolve": false,
+    "module": "commonjs",
+    "noUnusedLocals": true,
+    "noUnusedParameters": false,
+    "noImplicitReturns": true,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    "reactNamespace": "React",
+    "alwaysStrict": false,
+    "noImplicitUseStrict": true,
+    "moduleResolution": "node",
+    "lib": ["dom", "es2017"]
+  }
+}

@@ -11,12 +11,15 @@ import atImport from 'postcss-import';
 import reporter from 'postcss-reporter';
 import pug from 'gulp-pug';
 
+import typescript from "gulp-typescript";
+
 // Directories
 const SRC_DIR = 'app/src';
 const DIST_DIR = 'app/dist';
 
 // Source files
 const JS_GLOB = `${SRC_DIR}/**/*.js`;
+const TS_GLOB = `${SRC_DIR}/**/*.+(ts|tsx)`;
 const CSS_GLOB = `${SRC_DIR}/**/*.css`;
 const CSS_PARTIALS_GLOB = `${SRC_DIR}/**/_*.css`;
 const VIEWS_GLOB = `${SRC_DIR}/**/*.pug`;
@@ -30,8 +33,17 @@ export function clean() {
 
 // JS Task
 export function scripts() {
-  return src(JS_GLOB, {base: SRC_DIR})
+
+  src(JS_GLOB, {base: SRC_DIR}) 
     .pipe(babel())
+    .pipe(dest(DIST_DIR));
+
+  var tsConfig = require("./tsconfig.json").compilerOptions;
+
+  var tsResult = src(TS_GLOB, {base: SRC_DIR})
+    .pipe(typescript(tsConfig));
+
+  return tsResult.js
     .pipe(dest(DIST_DIR));
 }
 
@@ -50,6 +62,7 @@ export function styles() {
 
 export function watch() {
   watchSrc(JS_GLOB, scripts);
+  watchSrc(TS_GLOB, scripts);
   watchSrc(CSS_GLOB, styles);
   watchSrc(VIEWS_GLOB, views);
   watchSrc(SVG_GLOB, views);
