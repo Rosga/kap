@@ -15,7 +15,11 @@ import * as utils from "../../common/utils";
 import {handleKeyDown, validateNumericInput} from '../js/input-utils';
 import {handleTrafficLightsClicks, isVisible, disposeObservers, handleActiveButtonGroup} from '../js/utils';
 
-let recorder = utils.isWindows() ? null : require("../../recorder/osx-recorder");
+import { Recorder as ElectronRecorder } from "../../recorder/electron-recorder";
+
+let recorder = utils.isWindows() 
+  ? new ElectronRecorder()
+  : require("../../recorder/osx-recorder");
 
 const {app} = remote;
 
@@ -177,6 +181,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     }
+    else {
+      console.log("recorder => ", recorder);
+
+      var r = recorder;
+      r.startRecording().then(startSuccess).catch(startFailure);
+    }
       
   }
 
@@ -228,6 +238,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (utils.isMac()) {
       recorder.stopRecording().then(stopSuccess);
+    }
+    else {
+      console.log("recorder => ", recorder);
+      var r = recorder;
+      r.stopRecording().then(stopSuccess);
     }
 
     
