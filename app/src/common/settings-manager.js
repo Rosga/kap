@@ -4,7 +4,7 @@ import {app} from 'electron';
 import settings from 'electron-settings';
 import objectPath from 'object-path';
 
-const aperture = require('aperture')();
+// const aperture = require('aperture')();
 
 const DEFAULTS = {
   kapturesDir: `${homedir()}/Movies/Kaptures`,
@@ -44,12 +44,14 @@ function init() {
   // TODO: if no input device is available (could happen in an iMac, for example), we need
   // to tell the user
   // TODO: rewrite this comment (it's 4AM and i'm fucking tired)
-  aperture.getAudioSources().then(devices => {
-    DEFAULTS.audioInputDeviceId = (devices && devices[0] && devices[0].id) || 'none';
+
+
+  // aperture.getAudioSources().then(devices => {
+  //   DEFAULTS.audioInputDeviceId = (devices && devices[0] && devices[0].id) || 'none';
     settings.defaults(DEFAULTS);
     settings.applyDefaultsSync();
     sync();
-  });
+  // });
 }
 
 function get(key) {

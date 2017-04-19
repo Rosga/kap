@@ -5,7 +5,7 @@ import {handleTrafficLightsClicks, $, disposeObservers} from '../js/utils';
 
 const {app, dialog, getCurrentWindow} = remote;
 
-const aperture = require('aperture')();
+// const aperture = require('aperture')();
 
 const settingsValues = app.kap.settings.getAll();
 
@@ -48,17 +48,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   fpsSlider.value = settingsValues.fps;
   fpsLabel.innerText = `${settingsValues.fps} FPS`;
-  aperture.getAudioSources().then(devices => {
-    for (const device of devices) {
-      const option = document.createElement('option');
-      option.value = device.id;
-      option.text = device.name;
-      audioInputDeviceSelector.add(option);
-    }
-    if (settingsValues.recordAudio === true) {
-      audioInputDeviceSelector.value = settingsValues.audioInputDeviceId;
-    }
-  });
+  // aperture.getAudioSources().then(devices => {
+  //   for (const device of devices) {
+  //     const option = document.createElement('option');
+  //     option.value = device.id;
+  //     option.text = device.name;
+  //     audioInputDeviceSelector.add(option);
+  //   }
+  //   if (settingsValues.recordAudio === true) {
+  //     audioInputDeviceSelector.value = settingsValues.audioInputDeviceId;
+  //   }
+  // });
 
   generalPrefsBtn.onclick = function (e) {
     e.preventDefault();
