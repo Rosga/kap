@@ -27,6 +27,7 @@
     "ms": "^0.7.1",
     "object-path": "^0.11.3",
     "raven": "^0.12.1",
+    "recordrtc": "^5.4.1",
     "tmp": "0.0.29"
   },
   "xo": false

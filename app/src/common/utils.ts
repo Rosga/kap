@@ -34,3 +34,29 @@ export function isWindows() {
     return /^win/.test(process.platform);
 
 }
+
+export function blobToBuffer(blob): Promise<Buffer> {
+
+    return new Promise((resolve, reject) => {
+
+        try {
+
+            var fileReader = new FileReader();
+
+            var onLoadEnd = function () {
+                fileReader.removeEventListener("loadend", onLoadEnd);
+
+                var buffer = new Buffer(this.result, "binary");
+                resolve(buffer);
+            };
+
+            fileReader.addEventListener("loadend", onLoadEnd, false);
+            fileReader.readAsArrayBuffer(blob);
+
+        } catch (error) {
+            reject(error);
+        }
+
+    });
+
+}
