@@ -293,7 +293,7 @@ menubar.on('after-create-window', () => {
       positioner.move('trayCenter', tray.getBounds());
     } else if (wasStuck) {
       mainWindow.webContents.send('unstick-from-menubar');
-      app.dock.show();
+      // app.dock.show();
       setTimeout(() => mainWindow.show(), 250);
       setTimeout(() => resetMainWindowShadow(), 100);
       tray.setHighlightMode('never');
@@ -315,7 +315,10 @@ menubar.on('after-create-window', () => {
     }
     if (appState === 'recording' && shouldStopWhenTrayIsClicked) {
       mainWindow.webContents.send('stop-recording');
-    } else if (app.dock.isVisible()) {
+    } else if (app.dock && app.dock.isVisible()) {
+      mainWindow.show();
+    }
+    else {
       mainWindow.show();
     }
   });
