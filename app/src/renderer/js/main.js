@@ -16,9 +16,10 @@ import {handleKeyDown, validateNumericInput} from '../js/input-utils';
 import {handleTrafficLightsClicks, isVisible, disposeObservers, handleActiveButtonGroup} from '../js/utils';
 
 import { Recorder as ElectronRecorder } from "../../recorder/electron-recorder";
+import { FFMpegRecorder } from "../../recorder/ffmpeg-recorder";
 
 let recorder = utils.isWindows() 
-  ? new ElectronRecorder()
+  ? new FFMpegRecorder()
   : require("../../recorder/osx-recorder");
 
 const {app} = remote;
@@ -169,9 +170,10 @@ document.addEventListener('DOMContentLoaded', () => {
       remote.dialog.showErrorBox('Recording error', err.message);
     }
 
-    if (utils.isMac()) {
 
-      let cropperBounds = app.kap.getCropperWindow().getBounds();
+    let cropperBounds = app.kap.getCropperWindow().getBounds();
+
+    if (utils.isMac()) {
 
       recorder.startRecording(
         cropperBounds,
@@ -185,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log("recorder => ", recorder);
 
       var r = recorder;
-      r.startRecording().then(startSuccess).catch(startFailure);
+      r.startRecording(cropperBounds, {}).then(startSuccess).catch(startFailure);
     }
       
   }
