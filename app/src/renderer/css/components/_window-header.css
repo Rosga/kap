@@ -10,7 +10,6 @@
 
 
 .window-header {
-  @extend .webkit-drag;
   background: $background-secondary;
   -webkit-app-region: drag;
   cursor: -webkit-grab;

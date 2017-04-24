@@ -219,6 +219,8 @@ function getCropperWindow() {
   return cropperWindow;
 }
 
+app.disableHardwareAcceleration();
+
 app.on('ready', () => {
   globalShortcut.register('Cmd+Shift+5', () => {
     const recording = (appState === 'recording');

@@ -9,12 +9,18 @@ import moment from 'moment';
 import {convertToGif, convertToWebm} from '../../scripts/convert';
 import {init as initErrorReporter, report as reportError} from '../../common/reporter';
 import {log} from '../../common/logger';
+import * as utils from "../../common/utils";
 
 // note: `./` == `/app/dist/renderer/views`, not `js`
 import {handleKeyDown, validateNumericInput} from '../js/input-utils';
 import {handleTrafficLightsClicks, isVisible, disposeObservers, handleActiveButtonGroup} from '../js/utils';
 
-const aperture = require('aperture')();
+import { Recorder as ElectronRecorder } from "../../recorder/electron-recorder";
+import { FFMpegRecorder } from "../../recorder/ffmpeg-recorder";
+
+let recorder = utils.isWindows() 
+  ? new FFMpegRecorder()
+  : require("../../recorder/osx-recorder");
 
 const {app} = remote;
 
@@ -147,72 +153,43 @@ document.addEventListener('DOMContentLoaded', () => {
     setMainWindowTitle('Getting ready...');
     const past = Date.now();
 
-    const cropperBounds = app.kap.getCropperWindow().getBounds();
-    const display = remote.screen.getDisplayMatching(cropperBounds);
-
-    if (display.id === remote.screen.getPrimaryDisplay().id) {
-      // convert the coordinates to cartesian coordinates, which are used by CoreMedia
-      cropperBounds.y = screen.height - (cropperBounds.y + cropperBounds.height);
-    } else {
-      // if the cropper window is placed in a display that it's not the main one,
-      // we need to do tome _special_ math to calculate its position
-      const displayBounds = display.bounds;
-
-      // when there are more than one display, the bounds that macOS returns for a display
-      // that is not the main one are relative to the main display. consequently, the
-      // bounds of windows in that display are relative to the main display.
-      // we need to make those bounds relative to the display in which the cropper window
-      // is placed in order to aperture to work properly
-      cropperBounds.x = Math.abs(displayBounds.x - cropperBounds.x);
-      cropperBounds.y = Math.abs(displayBounds.y - cropperBounds.y);
-
-      // convert the coordinates to cartesian coordinates, which are used by CoreMedia
-      cropperBounds.y = displayBounds.height - (cropperBounds.y + cropperBounds.height);
+    const startSuccess = (filePath) => {
+      recordBtn.attributes['data-state'].value = 'ready-to-stop';
+      recordBtn.children[0].classList.add('hidden'); // crop btn
+      recordBtn.children[1].classList.remove('hidden'); // stop btn
+      startMonitoringElapsedTimeAndSize(filePath);
+      setMainWindowTitle('Recording');
+      ipcRenderer.send('started-recording');
+      log(`Started recording after ${(Date.now() - past) / 1000}s`);
     }
 
-    // the dashed border is 1px wide
-    cropperBounds.x += 1;
-    cropperBounds.y += 1;
-    cropperBounds.width -= 2;
-    cropperBounds.height -= 2;
-
-    // we need the most recent settings
-    const {
-      fps,
-      showCursor,
-      highlightClicks,
-      recordAudio,
-      audioInputDeviceId
-    } = app.kap.settings.getAll();
-
-    const apertureOpts = {
-      fps,
-      cropArea: cropperBounds,
-      showCursor,
-      highlightClicks,
-      displayId: display.id
-    };
-
-    if (recordAudio === true) {
-      apertureOpts.audioSourceId = audioInputDeviceId;
+    const startFailure = (err) => {
+      ipcRenderer.send('will-stop-recording');
+      log(err);
+      reportError(err);
+      remote.dialog.showErrorBox('Recording error', err.message);
     }
 
-    aperture.startRecording(apertureOpts)
-      .then(filePath => {
-        recordBtn.attributes['data-state'].value = 'ready-to-stop';
-        recordBtn.children[0].classList.add('hidden'); // crop btn
-        recordBtn.children[1].classList.remove('hidden'); // stop btn
-        startMonitoringElapsedTimeAndSize(filePath);
-        setMainWindowTitle('Recording');
-        ipcRenderer.send('started-recording');
-        log(`Started recording after ${(Date.now() - past) / 1000}s`);
-      })
-      .catch(err => {
-        ipcRenderer.send('will-stop-recording');
-        log(err);
-        reportError(err);
-        remote.dialog.showErrorBox('Recording error', err.message);
-      });
+
+    let cropperBounds = app.kap.getCropperWindow().getBounds();
+
+    if (utils.isMac()) {
+
+      recorder.startRecording(
+        cropperBounds,
+        remote.screen.getDisplayMatching(cropperBounds),
+        app.kap
+      ).then(startSuccess).catch(startFailure);
+
+
+    }
+    else {
+      console.log("recorder => ", recorder);
+
+      var r = recorder;
+      r.startRecording(cropperBounds, {}).then(startSuccess).catch(startFailure);
+    }
+      
   }
 
   function askUserToSaveFile(opts) {
@@ -233,33 +210,44 @@ document.addEventListener('DOMContentLoaded', () => {
   function stopRecording() {
     ipcRenderer.send('will-stop-recording');
     stopMonitoring();
-    aperture.stopRecording()
-      .then(filePath => {
-        ipcRenderer.send('stopped-recording');
-        windowTitle.innerText = 'Kap';
-        time.innerText = '00:00';
-        size.innerText = '0 kB';
 
-        restoreInputs();
+    const stopSuccess = (filePath) => {
+      ipcRenderer.send('stopped-recording');
+      windowTitle.innerText = 'Kap';
+      time.innerText = '00:00';
+      size.innerText = '0 kB';
 
-        switch (exportType) {
-          case 'mp4': {
-            const now = moment();
-            const fileName = `Kapture ${now.format('YYYY-MM-DD')} at ${now.format('H.mm.ss')}.mp4`;
-            askUserToSaveFile({fileName, filePath, type: 'mp4'});
-            break;
-          }
-          case 'webm': {
-            exportToType('webm', {filePath});
-            break;
-          }
-          case 'gif': {
-            ipcRenderer.send('open-editor-window', {filePath});
-            break;
-          }
-          // no default
+      restoreInputs();
+
+      switch (exportType) {
+        case 'mp4': {
+          const now = moment();
+          const fileName = `Kapture ${now.format('YYYY-MM-DD')} at ${now.format('H.mm.ss')}.mp4`;
+          askUserToSaveFile({ fileName, filePath, type: 'mp4' });
+          break;
         }
-      });
+        case 'webm': {
+          exportToType('webm', { filePath });
+          break;
+        }
+        case 'gif': {
+          ipcRenderer.send('open-editor-window', { filePath });
+          break;
+        }
+        // no default
+      }
+    }
+
+    if (utils.isMac()) {
+      recorder.stopRecording().then(stopSuccess);
+    }
+    else {
+      console.log("recorder => ", recorder);
+      var r = recorder;
+      r.stopRecording().then(stopSuccess);
+    }
+
+    
   }
 
   function shake(el) {

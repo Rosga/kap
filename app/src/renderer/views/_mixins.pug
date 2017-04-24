@@ -91,3 +91,6 @@ mixin stylesheet(name)
     example: +script('cropper')
 mixin script(name)
   script(src=`../js/${name}.js`)
+
+mixin externalScript(link)
+  script(src=`${link}`)
